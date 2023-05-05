@@ -24,7 +24,7 @@ jobs:
             vcpkg-root: C:\vcpkg
             extra-args: --overlay-triplets=./triplets
           - os: macos-latest
-            triplet: x64-osx-release
+            triplet: arm64-osx-release
             upload-path: /Users/runner/.cache/vcpkg/archives
             vcpkg-root: /usr/local/share/vcpkg
             extra-args: ""
