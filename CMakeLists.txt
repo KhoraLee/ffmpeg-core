@@ -32,7 +32,7 @@ endif()
 
 if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/ffmpeg.zip")
 	message(STATUS "Downloading FFMPEG prebuilts...")
-	file(DOWNLOAD https://github.com/Vita3K/ffmpeg-core/releases/download/continuous/${FFMPEG_PREBUILTS_NAME}
+	file(DOWNLOAD https://github.com/KhoraLee/ffmpeg-core/releases/download/continuous/${FFMPEG_PREBUILTS_NAME}
 		"${CMAKE_BINARY_DIR}/external/ffmpeg.zip" SHOW_PROGRESS)
 endif()
 
