@@ -5,34 +5,61 @@ endif()
 add_library(${FFMPEG_CORE_NAME} INTERFACE)
 
 target_include_directories(${FFMPEG_CORE_NAME} INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+
 if (WIN32 AND NOT MINGW)
+	set(FFMPEG_PREBUILTS_NAME "ffmpeg-windows")
+elseif (APPLE)
+	set(FFMPEG_PREBUILTS_NAME "ffmpeg-macOS")
+elseif (UNIX)
+	set(FFMPEG_PREBUILTS_NAME "ffmpeg-linux")
+else ()
+	message(FATAL_ERROR "Unsupported OS.")
+endif ()
+
+if(NOT DEFINED ARCHITECTURE)
+	message(FATAL_ERROR "ARCHITECTURE variable is not set up")
+elseif (ARCHITECTURE STREQUAL "x86_64")
+	set(FFMPEG_PREBUILTS_NAME "${FFMPEG_PREBUILTS_NAME}-x64.zip")
+elseif(ARCHITECTURE STREQUAL "arm64")
+	set(FFMPEG_PREBUILTS_NAME "${FFMPEG_PREBUILTS_NAME}-arm64.zip")
+else ()
+	if (APPLE)
+		set(FFMPEG_PREBUILTS_NAME "${FFMPEG_PREBUILTS_NAME}-universal.zip")
+	else ()
+		message(FATAL_ERROR "Unsupported architecture.")
+	endif()
+endif()
+
+if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/ffmpeg.zip")
+	message(STATUS "Downloading FFMPEG prebuilts...")
+	file(DOWNLOAD https://github.com/Vita3K/ffmpeg-core/releases/download/continuous/${FFMPEG_PREBUILTS_NAME}
+		"${CMAKE_BINARY_DIR}/external/ffmpeg.zip" SHOW_PROGRESS)
+endif()
+
+if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/ffmpeg/lib")
+	file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/external/ffmpeg/lib")
+	execute_process(COMMAND ${CMAKE_COMMAND} -E tar xzf "${CMAKE_BINARY_DIR}/external/ffmpeg.zip"
+		WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/ffmpeg/lib")
+endif()
+
+set(LIB_PREFIX "lib")
+set(LIB_EXT "a")
+if (WIN32 AND NOT MINGW)
+	set(LIB_PREFIX "")
+	set(LIB_EXT "lib")
 	target_link_libraries(${FFMPEG_CORE_NAME} INTERFACE
-		"${CMAKE_CURRENT_SOURCE_DIR}/lib/windows/x86_64/avformat.lib"
-		"${CMAKE_CURRENT_SOURCE_DIR}/lib/windows/x86_64/avcodec.lib"
-		"${CMAKE_CURRENT_SOURCE_DIR}/lib/windows/x86_64/swscale.lib"
-		"${CMAKE_CURRENT_SOURCE_DIR}/lib/windows/x86_64/avutil.lib"
-		"${CMAKE_CURRENT_SOURCE_DIR}/lib/windows/x86_64/avfilter.lib"
-		"${CMAKE_CURRENT_SOURCE_DIR}/lib/windows/x86_64/swresample.lib"
 		"psapi;strmiids;uuid;oleaut32;shlwapi;ws2_32;ole32;user32;bcrypt")
 elseif (APPLE)
 	target_link_libraries(${FFMPEG_CORE_NAME} INTERFACE
-		"${CMAKE_CURRENT_SOURCE_DIR}/lib/macos/libavformat.a"
-		"${CMAKE_CURRENT_SOURCE_DIR}/lib/macos/libavcodec.a"
-		"${CMAKE_CURRENT_SOURCE_DIR}/lib/macos/libswscale.a"
-		"${CMAKE_CURRENT_SOURCE_DIR}/lib/macos/libavutil.a"
-		"${CMAKE_CURRENT_SOURCE_DIR}/lib/macos/libavfilter.a"
-		"${CMAKE_CURRENT_SOURCE_DIR}/lib/macos/libswresample.a"
 		"-framework CoreServices" "-framework CoreFoundation" "-framework AudioUnit"
 		"-framework AudioToolbox" "-framework CoreAudio" "-framework CoreMedia"
 		"-framework VideoToolbox" "-framework CoreVideo" "-framework Security")
-elseif (UNIX)
-	target_link_libraries(${FFMPEG_CORE_NAME} INTERFACE
-		"${CMAKE_CURRENT_SOURCE_DIR}/lib/linux/x86_64/libavformat.a"
-		"${CMAKE_CURRENT_SOURCE_DIR}/lib/linux/x86_64/libavcodec.a"
-		"${CMAKE_CURRENT_SOURCE_DIR}/lib/linux/x86_64/libswscale.a"
-		"${CMAKE_CURRENT_SOURCE_DIR}/lib/linux/x86_64/libavutil.a"
-		"${CMAKE_CURRENT_SOURCE_DIR}/lib/linux/x86_64/libavfilter.a"
-		"${CMAKE_CURRENT_SOURCE_DIR}/lib/linux/x86_64/libswresample.a")
-else ()
-	message(FATAL_ERROR "No prebuilt was found for ffmpeg")
 endif ()
+
+target_link_libraries(${FFMPEG_CORE_NAME} INTERFACE
+	"${CMAKE_BINARY_DIR}/external/ffmpeg/lib/${LIB_PREFIX}avformat.${LIB_EXT}"
+	"${CMAKE_BINARY_DIR}/external/ffmpeg/lib/${LIB_PREFIX}avcodec.${LIB_EXT}"
+	"${CMAKE_BINARY_DIR}/external/ffmpeg/lib/${LIB_PREFIX}swscale.${LIB_EXT}"
+	"${CMAKE_BINARY_DIR}/external/ffmpeg/lib/${LIB_PREFIX}avutil.${LIB_EXT}"
+	"${CMAKE_BINARY_DIR}/external/ffmpeg/lib/${LIB_PREFIX}avfilter.${LIB_EXT}"
+	"${CMAKE_BINARY_DIR}/external/ffmpeg/lib/${LIB_PREFIX}swresample.${LIB_EXT}")
